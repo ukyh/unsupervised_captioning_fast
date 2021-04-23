@@ -22,6 +22,8 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_string('job_dir', 'saving', 'job dir')
 
+tf.flags.DEFINE_integer('img_dim', 1536, 'image dim')
+
 tf.flags.DEFINE_integer('emb_dim', 512, 'emb dim')
 
 tf.flags.DEFINE_integer('mem_dim', 512, 'mem dim')
@@ -41,11 +43,12 @@ tf.flags.DEFINE_string('data_dir', None, 'path to all images')
 
 tf.flags.DEFINE_string('inc_ckpt', None, 'InceptionV4 checkpoint path')
 
+assert FLAGS.batch_size == 1, 'Batch size has to be 1 in this inherited code'
+
 
 def _tower_fn(im, is_training=False):
-  with slim.arg_scope(inception_v4.inception_v4_arg_scope()):
-    net, _ = inception_v4.inception_v4(im, None, is_training=False)
-    net = tf.squeeze(net, [1, 2])
+
+  net = im  # (batch=1, dim)
 
   with tf.variable_scope('Generator'):
     feat = slim.fully_connected(net, FLAGS.mem_dim, activation_fn=None)
@@ -83,25 +86,12 @@ def _tower_fn(im, is_training=False):
   return tf.concat(init_state, axis=1, name='initial_state')
 
 
-def read_image(im):
-  """Reads an image."""
-  filename = tf.string_join([FLAGS.data_dir, im])
-  image = tf.read_file(filename)
-  image = tf.image.decode_jpeg(image, 3)
-  image = tf.image.convert_image_dtype(image, tf.float32)
-  image = tf.image.resize_images(image, [346, 346])
-  image = image[23:-24, 23:-24]
-  image = image * 2 - 1
-  return image
-
-
 class Infer:
 
   def __init__(self, job_dir=FLAGS.job_dir):
-    im_inp = tf.placeholder(tf.string, [])
-    im = read_image(im_inp)
-    im = tf.expand_dims(im, 0)
-    initial_state_op = _tower_fn(im)
+
+    im_inp = tf.placeholder(tf.float32, [FLAGS.batch_size, FLAGS.img_dim])
+    initial_state_op = _tower_fn(im_inp)
 
     vocab = vocabulary.Vocabulary(FLAGS.vocab_file)
     self.saver = tf.train.Saver(tf.trainable_variables('Generator'))
@@ -112,9 +102,7 @@ class Infer:
     config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
     self.sess = tf.Session(config=config)
 
-    inc_saver = tf.train.Saver(tf.global_variables('InceptionV4'))
     self.restore_fn(job_dir)
-    inc_saver.restore(self.sess, FLAGS.inc_ckpt)
 
   def restore_fn(self, checkpoint_path):
     if tf.gfile.IsDirectory(checkpoint_path):
