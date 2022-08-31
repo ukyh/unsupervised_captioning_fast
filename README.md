@@ -54,7 +54,7 @@ unzip -j val2014.zip -d ~/dataset/mscoco/all_images
 
 **For combined method**  
 
-4. Download `model.ckpt-30000.*` files from [here](https://rochester.app.box.com/s/f7g31ufkp19vd6l3y9jpzf7gnjcxqxpd/folder/133088478053) and put them into  `unsupervised_captioning_fast/sen_gan`.
+4. Download `model.ckpt-30000.*` files from [here](https://github.com/fengyang0317/unsupervised_captioning) and put them into  `unsupervised_captioning_fast/sen_gan`.
 
 5. Download `image_train.tfrec` and `sentence.tfrec` to `unsupervised_captioning_fast/data`. To download these file, please refer to [this discussion](https://github.com/fengyang0317/unsupervised_captioning/issues/36) (currently, `image_train.tfrec` is only available in the Baidu link).
 
